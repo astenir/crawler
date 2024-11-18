@@ -7,14 +7,23 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/astenir/crawler/collect"
+	"github.com/astenir/crawler/log"
 	"github.com/astenir/crawler/proxy"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func main() {
-	proxyURLs := []string{"http://127.0.0.1:8888", "http://127.0.0.1:8887"}
+
+	plugin, c := log.NewFilePlugin("./log.txt", zapcore.InfoLevel)
+	defer c.Close()
+	logger := log.NewLogger(plugin)
+	logger.Info("log init end")
+
+	proxyURLs := []string{}
 	p, err := proxy.RoundRobinProxySwitcher(proxyURLs...)
 	if err != nil {
-		fmt.Println("RoundRobinProxySwitcher failed")
+		logger.Error("RoundRobinProxySwitcher failed")
 	}
 
 	url := "https://book.douban.com/subject/30137806/"
@@ -25,15 +34,20 @@ func main() {
 
 	body, err := f.Get(url)
 	if err != nil {
-		fmt.Printf("read content failed:%v", err)
+		logger.Error("read content failed",
+			zap.Error(err),
+		)
 		return
 	}
 	// fmt.Println(string(body))
+	logger.Info("get content", zap.Int("len", len(body)))
 
 	// 加载HTML文档
 	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
 	if err != nil {
-		fmt.Printf("read content failed:%v", err)
+		logger.Error("read content failed",
+			zap.Error(err),
+		)
 	}
 
 	doc.Find("p.comment-content span.short").Each(func(i int, s *goquery.Selection) {
@@ -41,4 +55,5 @@ func main() {
 		title := s.Text()
 		fmt.Printf("Review %d: %s\n", i+1, title)
 	})
+
 }
