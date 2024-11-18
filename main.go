@@ -1,57 +1,35 @@
 package main
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
-	"io"
-	"net/http"
+	"time"
 
-	"golang.org/x/net/html/charset"
-	"golang.org/x/text/encoding"
-	"golang.org/x/text/encoding/unicode"
-	"golang.org/x/text/transform"
+	"github.com/PuerkitoBio/goquery"
+	"github.com/astenir/crawler/collect"
 )
 
 func main() {
-	url := "https://www.chinanews.com.cn/"
-	body, err := Fetch(url)
-
+	url := "https://book.douban.com/subject/30137806/"
+	var f collect.Fetcher = collect.BrowserFetch{
+		Timeout: 3000 * time.Millisecond,
+	}
+	body, err := f.Get(url)
 	if err != nil {
 		fmt.Printf("read content failed:%v", err)
 		return
 	}
+	// fmt.Println(string(body))
 
-	fmt.Println(string(body))
-}
-
-func Fetch(url string) ([]byte, error) {
-
-	resp, err := http.Get(url)
-
+	// 加载HTML文档
+	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
 	if err != nil {
-		panic(err)
+		fmt.Printf("read content failed:%v", err)
 	}
 
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("Error status code:%d", resp.StatusCode)
-	}
-	bodyReader := bufio.NewReader(resp.Body)
-	e := DeterminEncoding(bodyReader)
-	utf8Reader := transform.NewReader(bodyReader, e.NewDecoder())
-	return io.ReadAll(utf8Reader)
-}
-
-func DeterminEncoding(r *bufio.Reader) encoding.Encoding {
-	// 读取前1024个字节
-	bytes, err := r.Peek(1024)
-
-	if err != nil {
-		fmt.Printf("fetch error:%v", err)
-		return unicode.UTF8
-	}
-
-	e, _, _ := charset.DetermineEncoding(bytes, "")
-	return e
+	doc.Find("p.comment-content span.short").Each(func(i int, s *goquery.Selection) {
+		// 获取匹配元素的文本
+		title := s.Text()
+		fmt.Printf("Review %d: %s\n", i+1, title)
+	})
 }
