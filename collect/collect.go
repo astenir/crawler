@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/astenir/crawler/proxy"
+	"go.uber.org/zap"
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
@@ -24,6 +25,7 @@ type BaseFetch struct {
 type BrowserFetch struct {
 	Timeout time.Duration
 	Proxy   proxy.ProxyFunc
+	Logger  *zap.Logger
 }
 
 // DeterminEncoding 用于确定给定 bufio.Reader 中文本的编码类型。

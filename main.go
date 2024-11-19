@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/astenir/crawler/collect"
+	"github.com/astenir/crawler/engine"
 	"github.com/astenir/crawler/log"
 	"github.com/astenir/crawler/parse/doubangroup"
 	"github.com/astenir/crawler/proxy"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -31,39 +31,28 @@ func main() {
 	// cookie
 
 	// url
-	var worklist []*collect.Request
+	var seeds []*collect.Request
 	for i := 0; i <= 0; i += 25 {
 		str := fmt.Sprintf("https://www.douban.com/group/szsh/discussion?start=%d&type=new", i)
-		worklist = append(worklist, &collect.Request{
+		seeds = append(seeds, &collect.Request{
 			Url:       str,
+			WaitTime:  10 * time.Second,
 			ParseFunc: doubangroup.ParseURL,
 		})
 	}
 
 	var f collect.Fetcher = &collect.BrowserFetch{
 		Timeout: 3000 * time.Millisecond,
+		Logger:  logger,
 		Proxy:   p,
 	}
 
-	for len(worklist) > 0 {
-		items := worklist
-		worklist = nil
-		for _, item := range items {
-			body, err := f.Get(item)
-			time.Sleep(1 * time.Second)
-			if err != nil {
-				logger.Error("read content failed",
-					zap.Error(err),
-				)
-				continue
-			}
-			res := item.ParseFunc(body, item)
-			for _, item := range res.Items {
-				logger.Info("result",
-					zap.String("get url:", item.(string)))
-			}
-			worklist = append(worklist, res.Requests...)
-		}
-	}
+	s := engine.NewSchedule(
+		engine.WithFetcher(f),
+		engine.WithLogger(logger),
+		engine.WithWorkCount(5),
+		engine.WithSeeds(seeds),
+	)
+	s.Run()
 
 }
