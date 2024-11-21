@@ -22,11 +22,12 @@ type Task struct {
 
 // 单个请求
 type Request struct {
-	unique    string
+	// unique    string
 	Task      *Task
 	Url       string
 	Method    string
 	Depth     int
+	Priority  int
 	ParseFunc func([]byte, *Request) ParseResult
 }
 
