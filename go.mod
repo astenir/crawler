@@ -9,4 +9,8 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
-require go.uber.org/multierr v1.11.0 // indirect
+require (
+	github.com/robertkrimen/otto v0.5.1
+	go.uber.org/multierr v1.11.0 // indirect
+	gopkg.in/sourcemap.v1 v1.0.5 // indirect
+)
