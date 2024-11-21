@@ -1,13 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/astenir/crawler/collect"
 	"github.com/astenir/crawler/engine"
 	"github.com/astenir/crawler/log"
-	"github.com/astenir/crawler/parse/doubangroup"
 	"github.com/astenir/crawler/proxy"
 	"go.uber.org/zap/zapcore"
 )
@@ -29,27 +27,17 @@ func main() {
 	}
 
 	var f collect.Fetcher = &collect.BrowserFetch{
-		Timeout: 3000 * time.Millisecond,
+		Timeout: 30000 * time.Millisecond,
 		Logger:  logger,
 		Proxy:   p,
 	}
 
 	// url
 	var seeds = make([]*collect.Task, 0, 1000)
-	for i := 0; i <= 0; i += 25 {
-		str := fmt.Sprintf("https://www.douban.com/group/szsh/discussion?start=%d&type=new", i)
-		seeds = append(seeds, &collect.Task{
-			Url:      str,
-			WaitTime: 1 * time.Second,
-			Fetcher:  f,
-			MaxDepth: 5,
-			RootReq: &collect.Request{
-				Priority:  1,
-				Method:    "GET",
-				ParseFunc: doubangroup.ParseURL,
-			},
-		})
-	}
+	seeds = append(seeds, &collect.Task{
+		Name:    "find_douban_sun_room",
+		Fetcher: f,
+	})
 
 	s := engine.NewEngine(
 		engine.WithFetcher(f),
