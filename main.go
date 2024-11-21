@@ -28,30 +28,34 @@ func main() {
 		logger.Error("RoundRobinProxySwitcher failed")
 	}
 
-	// cookie
-
-	// url
-	var seeds []*collect.Request
-	for i := 0; i <= 0; i += 25 {
-		str := fmt.Sprintf("https://www.douban.com/group/szsh/discussion?start=%d&type=new", i)
-		seeds = append(seeds, &collect.Request{
-			Url:       str,
-			WaitTime:  10 * time.Second,
-			ParseFunc: doubangroup.ParseURL,
-		})
-	}
-
 	var f collect.Fetcher = &collect.BrowserFetch{
 		Timeout: 3000 * time.Millisecond,
 		Logger:  logger,
 		Proxy:   p,
 	}
 
-	s := engine.NewSchedule(
+	// url
+	var seeds = make([]*collect.Task, 0, 1000)
+	for i := 0; i <= 0; i += 25 {
+		str := fmt.Sprintf("https://www.douban.com/group/szsh/discussion?start=%d&type=new", i)
+		seeds = append(seeds, &collect.Task{
+			Url:      str,
+			WaitTime: 1 * time.Second,
+			Fetcher:  f,
+			MaxDepth: 5,
+			RootReq: &collect.Request{
+				Method:    "GET",
+				ParseFunc: doubangroup.ParseURL,
+			},
+		})
+	}
+
+	s := engine.NewEngine(
 		engine.WithFetcher(f),
 		engine.WithLogger(logger),
 		engine.WithWorkCount(5),
 		engine.WithSeeds(seeds),
+		engine.WithScheduler(engine.NewSchedule()),
 	)
 	s.Run()
 
