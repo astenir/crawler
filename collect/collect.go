@@ -83,7 +83,13 @@ func (b BrowserFetch) Get(request *Request) ([]byte, error) {
 	req.Header.Set("User-Agent", extensions.GenerateRandomUA())
 
 	resp, err := client.Do(req)
+
+	time.Sleep(request.Task.WaitTime)
+
 	if err != nil {
+		b.Logger.Error("fetch failed",
+			zap.Error(err),
+		)
 		return nil, err
 	}
 

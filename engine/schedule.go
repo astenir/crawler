@@ -4,30 +4,38 @@ import (
 	"sync"
 
 	"github.com/astenir/crawler/collect"
+	"github.com/astenir/crawler/collector"
+	"github.com/astenir/crawler/parse/doubanbook"
 	"github.com/astenir/crawler/parse/doubangroup"
+	"github.com/astenir/crawler/parse/doubangroupjs"
 	"github.com/robertkrimen/otto"
 	"go.uber.org/zap"
 )
 
 func init() {
-	Store.AddJSTask(doubangroup.DoubangroupJSTask)
-	// Store.Add(doubangroup.DoubangroupTask)
+	Store.AddJSTask(doubangroupjs.DoubangroupJSTask)
+	Store.Add(doubangroup.DoubangroupTask)
+	Store.Add(doubanbook.DoubanBookTask)
 }
 
 func (c *CrawlerStore) Add(task *collect.Task) {
-	c.hash[task.Name] = task
+	c.Hash[task.Name] = task
 	c.list = append(c.list, task)
 }
 
 // 全局蜘蛛种类实例
 var Store = &CrawlerStore{
 	list: []*collect.Task{},
-	hash: map[string]*collect.Task{},
+	Hash: map[string]*collect.Task{},
+}
+
+func GetFields(taskName string, ruleName string) []string {
+	return Store.Hash[taskName].Rule.Trunk[ruleName].ItemFields
 }
 
 type CrawlerStore struct {
 	list []*collect.Task
-	hash map[string]*collect.Task
+	Hash map[string]*collect.Task
 }
 
 type Crawler struct {
@@ -97,11 +105,6 @@ func (s *Schedule) Pull() *collect.Request {
 	return r
 }
 
-func (s *Schedule) Output() *collect.Request {
-	r := <-s.workerCh
-	return r
-}
-
 func (s *Schedule) Schedule() {
 	var req *collect.Request
 	var ch chan *collect.Request
@@ -134,8 +137,9 @@ func (s *Schedule) Schedule() {
 func (e *Crawler) Schedule() {
 	var reqs []*collect.Request
 	for _, seed := range e.Seeds {
-		task := Store.hash[seed.Name]
+		task := Store.Hash[seed.Name]
 		task.Fetcher = seed.Fetcher
+		task.Storage = seed.Storage
 		rootreqs, err := task.Rule.Root()
 		if err != nil {
 			e.Logger.Error("get root failed",
@@ -216,6 +220,12 @@ func (s *Crawler) HandleResult() {
 	for result := range s.out {
 		for _, item := range result.Items {
 			// todo: store
+			switch d := item.(type) {
+			case *collector.DataCell:
+				name := d.GetTaskName()
+				task := Store.Hash[name]
+				task.Storage.Save(d)
+			}
 			s.Logger.Sugar().Info("get result: ", item)
 		}
 	}
@@ -336,6 +346,6 @@ func (c *CrawlerStore) AddJSTask(m *collect.TaskModle) {
 		}
 	}
 
-	c.hash[task.Name] = task
+	c.Hash[task.Name] = task
 	c.list = append(c.list, task)
 }

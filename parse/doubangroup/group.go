@@ -16,7 +16,7 @@ var DoubangroupTask = &collect.Task{
 		Name:     "find_douban_sun_room",
 		WaitTime: 1 * time.Second,
 		MaxDepth: 5,
-		Cookie:   "",
+		Cookie:   ``,
 	},
 	Rule: collect.RuleTree{
 		Root: func() ([]*collect.Request, error) {
@@ -73,42 +73,3 @@ func GetSunRoom(ctx *collect.Context) (collect.ParseResult, error) {
 	}
 	return result, nil
 }
-
-// func ParseURL(contents []byte, req *collect.Request) collect.ParseResult {
-// 	re := regexp.MustCompile(urlListRe)
-
-// 	matches := re.FindAllSubmatch(contents, -1)
-// 	result := collect.ParseResult{}
-
-// 	for _, m := range matches {
-// 		u := string(m[1])
-// 		result.Requests = append(
-// 			result.Requests, &collect.Request{
-// 				Method: "GET",
-// 				Task:   req.Task,
-// 				Url:    u,
-// 				Depth:  req.Depth + 1,
-// 				ParseFunc: func(c []byte, request *collect.Request) collect.ParseResult {
-// 					return GetContent(c, u)
-// 				},
-// 			})
-// 	}
-// 	return result
-// }
-
-// func GetContent(contents []byte, url string) collect.ParseResult {
-// 	re := regexp.MustCompile(ContentRe)
-
-// 	ok := re.Match(contents)
-// 	if !ok {
-// 		return collect.ParseResult{
-// 			Items: []interface{}{},
-// 		}
-// 	}
-
-// 	result := collect.ParseResult{
-// 		Items: []interface{}{url},
-// 	}
-
-// 	return result
-// }
