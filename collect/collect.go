@@ -44,13 +44,11 @@ func DeterminEncoding(r *bufio.Reader) encoding.Encoding {
 func (BaseFetch) Get(req *Request) ([]byte, error) {
 	resp, err := http.Get(req.Url)
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("Error status code:%d", resp.StatusCode)
-		return nil, err
+		return nil, fmt.Errorf("error status code: %d", resp.StatusCode)
 	}
 
 	bodyReader := bufio.NewReader(resp.Body)
@@ -87,9 +85,6 @@ func (b BrowserFetch) Get(request *Request) ([]byte, error) {
 	// time.Sleep(request.Task.WaitTime)
 
 	if err != nil {
-		b.Logger.Error("fetch failed",
-			zap.Error(err),
-		)
 		return nil, err
 	}
 

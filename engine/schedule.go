@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"runtime/debug"
 	"sync"
 
 	"github.com/astenir/crawler/collect"
@@ -159,6 +160,13 @@ func (e *Crawler) Schedule() {
 }
 
 func (s *Crawler) CreateWork() {
+	defer func() {
+		if err := recover(); err != nil {
+			s.Logger.Error("worker panic",
+				zap.Any("err", err),
+				zap.String("stack", string(debug.Stack())))
+		}
+	}()
 	for {
 		req := s.scheduler.Pull()
 		if err := req.Check(); err != nil {
@@ -175,7 +183,7 @@ func (s *Crawler) CreateWork() {
 		}
 		s.StoreVisited(req)
 
-		body, err := req.Task.Fetcher.Get(req)
+		body, err := req.Fetch()
 		if err != nil {
 			s.Logger.Error("can't fetch ",
 				zap.Error(err),
