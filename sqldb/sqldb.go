@@ -19,10 +19,6 @@ type Sqldb struct {
 	db *sql.DB
 }
 
-func newSqldb() *Sqldb {
-	return &Sqldb{}
-}
-
 type Field struct {
 	Title string
 	Type  string

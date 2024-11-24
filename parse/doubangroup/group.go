@@ -3,7 +3,6 @@ package doubangroup
 import (
 	"fmt"
 	"regexp"
-	"time"
 
 	"github.com/astenir/crawler/collect"
 )
@@ -14,7 +13,7 @@ const ContentRe = `<div class="topic-content">[\s\S]*?好[\s\S]*?<div class="asi
 var DoubangroupTask = &collect.Task{
 	Property: collect.Property{
 		Name:     "find_douban_sun_room",
-		WaitTime: 1 * time.Second,
+		WaitTime: 2,
 		MaxDepth: 5,
 		Cookie:   ``,
 	},

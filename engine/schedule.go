@@ -4,10 +4,10 @@ import (
 	"sync"
 
 	"github.com/astenir/crawler/collect"
-	"github.com/astenir/crawler/collector"
 	"github.com/astenir/crawler/parse/doubanbook"
 	"github.com/astenir/crawler/parse/doubangroup"
 	"github.com/astenir/crawler/parse/doubangroupjs"
+	"github.com/astenir/crawler/storage"
 	"github.com/robertkrimen/otto"
 	"go.uber.org/zap"
 )
@@ -140,6 +140,8 @@ func (e *Crawler) Schedule() {
 		task := Store.Hash[seed.Name]
 		task.Fetcher = seed.Fetcher
 		task.Storage = seed.Storage
+		task.Limit = seed.Limit
+		task.Logger = e.Logger
 		rootreqs, err := task.Rule.Root()
 		if err != nil {
 			e.Logger.Error("get root failed",
@@ -221,7 +223,7 @@ func (s *Crawler) HandleResult() {
 		for _, item := range result.Items {
 			// todo: store
 			switch d := item.(type) {
-			case *collector.DataCell:
+			case *storage.DataCell:
 				name := d.GetTaskName()
 				task := Store.Hash[name]
 				task.Storage.Save(d)

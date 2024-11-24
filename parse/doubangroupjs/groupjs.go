@@ -1,15 +1,13 @@
 package doubangroupjs
 
 import (
-	"time"
-
 	"github.com/astenir/crawler/collect"
 )
 
 var DoubangroupJSTask = &collect.TaskModle{
 	Property: collect.Property{
 		Name:     "js_find_douban_sun_room",
-		WaitTime: 1 * time.Second,
+		WaitTime: 2,
 		MaxDepth: 5,
 		Cookie:   ``,
 	},

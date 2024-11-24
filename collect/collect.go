@@ -84,7 +84,7 @@ func (b BrowserFetch) Get(request *Request) ([]byte, error) {
 
 	resp, err := client.Do(req)
 
-	time.Sleep(request.Task.WaitTime)
+	// time.Sleep(request.Task.WaitTime)
 
 	if err != nil {
 		b.Logger.Error("fetch failed",

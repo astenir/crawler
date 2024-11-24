@@ -4,12 +4,14 @@ import (
 	"time"
 
 	"github.com/astenir/crawler/collect"
-	"github.com/astenir/crawler/collector"
-	"github.com/astenir/crawler/collector/sqlstorage"
 	"github.com/astenir/crawler/engine"
+	"github.com/astenir/crawler/limiter"
 	"github.com/astenir/crawler/log"
 	"github.com/astenir/crawler/proxy"
+	"github.com/astenir/crawler/storage"
+	"github.com/astenir/crawler/storage/sqlstorage"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/time/rate"
 )
 
 func main() {
@@ -34,7 +36,7 @@ func main() {
 		Proxy:   p,
 	}
 
-	var storage collector.Storage
+	var storage storage.Storage
 	storage, err = sqlstorage.New(
 		sqlstorage.WithSqlUrl("root:123456@tcp(127.0.0.1:3326)/crawler?charset=utf8"),
 		sqlstorage.WithLogger(logger.Named("sqlDB")),
@@ -45,6 +47,12 @@ func main() {
 		return
 	}
 
+	//2秒钟1个
+	secondLimit := rate.NewLimiter(limiter.Per(1, 2*time.Second), 1)
+	//60秒20个
+	minuteLimit := rate.NewLimiter(limiter.Per(20, 1*time.Minute), 20)
+	multiLimiter := limiter.MultiLimiter(secondLimit, minuteLimit)
+
 	// url
 	var seeds = make([]*collect.Task, 0, 1000)
 	seeds = append(seeds, &collect.Task{
@@ -53,6 +61,7 @@ func main() {
 		},
 		Fetcher: f,
 		Storage: storage,
+		Limit:   multiLimiter,
 	})
 
 	s := engine.NewEngine(
