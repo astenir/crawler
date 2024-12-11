@@ -33,5 +33,6 @@ func NewFilePlugin(
 	filePath string, enabler zapcore.LevelEnabler) (Plugin, io.Closer) {
 	var writer = DefaultLumberjackLogger()
 	writer.Filename = filePath
+
 	return NewPlugin(zapcore.AddSync(writer), enabler), writer
 }

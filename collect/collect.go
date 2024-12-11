@@ -25,7 +25,7 @@ type BaseFetch struct {
 
 type BrowserFetch struct {
 	Timeout time.Duration
-	Proxy   proxy.ProxyFunc
+	Proxy   proxy.Func
 	Logger  *zap.Logger
 }
 
@@ -33,20 +33,27 @@ type BrowserFetch struct {
 // 该函数通过读取文本的前1024个字节来推断其编码格式。
 func DeterminEncoding(r *bufio.Reader) encoding.Encoding {
 	bytes, err := r.Peek(1024)
+
 	if err != nil {
-		fmt.Printf("fetch error:%v", err)
+		zap.L().Error("fetch failed", zap.Error(err))
+
 		return unicode.UTF8
 	}
+
 	e, _, _ := charset.DetermineEncoding(bytes, "")
+
 	return e
 }
 
 func (BaseFetch) Get(req *Request) ([]byte, error) {
-	resp, err := http.Get(req.Url)
+	resp, err := http.Get(req.URL)
+
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("error status code: %d", resp.StatusCode)
 	}
@@ -54,11 +61,11 @@ func (BaseFetch) Get(req *Request) ([]byte, error) {
 	bodyReader := bufio.NewReader(resp.Body)
 	e := DeterminEncoding(bodyReader)
 	transReader := transform.NewReader(bodyReader, e.NewDecoder())
+
 	return io.ReadAll(transReader)
 }
 
 func (b BrowserFetch) Get(request *Request) ([]byte, error) {
-
 	client := &http.Client{
 		Timeout: b.Timeout,
 	}
@@ -69,9 +76,10 @@ func (b BrowserFetch) Get(request *Request) ([]byte, error) {
 		client.Transport = transport
 	}
 
-	req, err := http.NewRequest("GET", request.Url, nil)
+	req, err := http.NewRequest(http.MethodGet, request.URL, nil)
+
 	if err != nil {
-		return nil, fmt.Errorf("get url failed:%v", err)
+		return nil, fmt.Errorf("get url failed:%w", err)
 	}
 
 	if len(request.Task.Cookie) > 0 {
@@ -88,8 +96,11 @@ func (b BrowserFetch) Get(request *Request) ([]byte, error) {
 		return nil, err
 	}
 
+	defer resp.Body.Close()
+
 	bodyReader := bufio.NewReader(resp.Body)
 	e := DeterminEncoding(bodyReader)
 	utf8Reader := transform.NewReader(bodyReader, e.NewDecoder())
+
 	return io.ReadAll(utf8Reader)
 }

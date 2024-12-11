@@ -13,6 +13,8 @@ func (t *Temp) Set(key string, value interface{}) error {
 	if t.data == nil {
 		t.data = make(map[string]interface{}, 8)
 	}
+
 	t.data[key] = value
+
 	return nil
 }

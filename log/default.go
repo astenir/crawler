@@ -10,6 +10,7 @@ func DefaultEncoderConfig() zapcore.EncoderConfig {
 	var encoderConfig = zap.NewProductionEncoderConfig()
 	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
 	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+
 	return encoderConfig
 }
 
@@ -22,6 +23,7 @@ func DefaultOption() []zap.Option {
 	var stackTraceLevel zap.LevelEnablerFunc = func(level zapcore.Level) bool {
 		return level >= zapcore.DPanicLevel
 	}
+
 	return []zap.Option{
 		zap.AddCaller(),
 		zap.AddStacktrace(stackTraceLevel),
