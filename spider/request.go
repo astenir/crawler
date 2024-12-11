@@ -1,4 +1,4 @@
-package collect
+package spider
 
 import (
 	"context"
@@ -6,35 +6,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"regexp"
-	"sync"
 	"time"
 
-	"github.com/astenir/crawler/limiter"
-	"github.com/astenir/crawler/storage"
-	"go.uber.org/zap"
 	"golang.org/x/exp/rand"
 )
-
-type Property struct {
-	Name     string `json:"name"` // 任务名称，应保证唯一性
-	URL      string `json:"url"`
-	Cookie   string `json:"cookie"`
-	WaitTime int64  `json:"wait_time"` // 随机休眠时间，秒
-	Reload   bool   `json:"reload"`    // 网站是否可以重复爬取
-	MaxDepth int64  `json:"max_depth"`
-}
-
-// 一个任务实例，
-type Task struct {
-	Property
-	Visited     map[string]bool
-	VisitedLock sync.Mutex
-	Fetcher     Fetcher
-	Storage     storage.Storage
-	Rule        RuleTree
-	Logger      *zap.Logger
-	Limit       limiter.RateLimiter
-}
 
 type Context struct {
 	Body []byte
@@ -45,8 +20,10 @@ func (c *Context) GetRule(ruleName string) *Rule {
 	return c.Req.Task.Rule.Trunk[ruleName]
 }
 
-func (c *Context) Output(data interface{}) *storage.DataCell {
-	res := &storage.DataCell{}
+func (c *Context) Output(data interface{}) *DataCell {
+	res := &DataCell{
+		Task: c.Req.Task,
+	}
 	res.Data = make(map[string]interface{})
 	res.Data["Task"] = c.Req.Task.Name
 	res.Data["Rule"] = c.Req.RuleName

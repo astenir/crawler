@@ -4,20 +4,15 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/astenir/crawler/collect"
+	"github.com/astenir/crawler/spider"
 	"go.uber.org/zap"
 )
 
-var DoubanBookTask = &collect.Task{
-	Property: collect.Property{
-		Name:     "douban_book_list",
-		WaitTime: 2,
-		MaxDepth: 5,
-		Cookie:   `bid=pAGJ7yRQq5s; douban-fav-remind=1; _pk_id.100001.8cb4=967bd3913d4c4256.1723122696.; _pk_ref.100001.8cb4=%5B%22%22%2C%22%22%2C1729326734%2C%22https%3A%2F%2Fwww.baidu.com%2Fs%3Fwd%3D%E5%8D%83%E5%B9%B4%E7%8E%8B%E5%9B%BD%E7%9A%84%E5%85%AC%E4%B8%BB%26rsv_spt%3D1%26rsv_iqid%3D0x8ed9c74c0075489d%26issp%3D1%26f%3D8%26rsv_bp%3D1%26rsv_idx%3D2%26ie%3Dutf-8%26rqlang%3Dcn%26tn%3Dbaiduhome_pg%26rsv_enter%3D1%26rsv_dl%3Dtb%26oq%3D%25E5%258D%2583%25E5%25B9%25B4%25E7%258E%258B%25E5%259B%25BD%25E7%259A%2584%25E5%25A7%25AC%25E5%2590%259B%26rsv_btype%3Dt%26inputT%3D1137%26rsv_t%3D4d23TIgmY5871f19Ad4ZcpbuYeifb9FKhn12Dku5CLv0dUVeAoVjXtsu01TahtyBlNSv%26rsv_sug3%3D24%26rsv_sug1%3D18%26rsv_sug7%3D100%26rsv_pq%3Dd79c535900c7d269%26rsv_sug2%3D0%26rsv_sug4%3D2080%22%5D; _ga=GA1.1.1539337777.1731915190; _ga_RXNMP372GL=GS1.1.1731915190.1.0.1731915192.58.0.0; viewed="30137806_1007305"; dbcl2="258704165:wml2ul9TLEA"; push_noty_num=0; push_doumail_num=0; __utmv=30149280.25870; ck=ZPe_; __utma=30149280.1434693163.1723122696.1732188864.1732204686.9; __utmc=30149280; __utmz=30149280.1732204686.9.6.utmcsr=cn.bing.com|utmccn=(referral)|utmcmd=referral|utmcct=/; __utmt=1; __utmb=30149280.2.10.1732204686`,
-	},
-	Rule: collect.RuleTree{
-		Root: func() ([]*collect.Request, error) {
-			roots := []*collect.Request{
+var DoubanBookTask = &spider.Task{
+	Options: spider.Options{Name: "douban_book_list"},
+	Rule: spider.RuleTree{
+		Root: func() ([]*spider.Request, error) {
+			roots := []*spider.Request{
 				{
 					Priority: 1,
 					URL:      "https://book.douban.com",
@@ -28,7 +23,7 @@ var DoubanBookTask = &collect.Task{
 
 			return roots, nil
 		},
-		Trunk: map[string]*collect.Rule{
+		Trunk: map[string]*spider.Rule{
 			"数据tag": {ParseFunc: ParseTag},
 			"书籍列表":  {ParseFunc: ParseBookList},
 			"书籍简介": {
@@ -49,15 +44,15 @@ var DoubanBookTask = &collect.Task{
 
 const regexpStr = `<a href="([^"]+)" class="tag">([^<]+)</a>`
 
-func ParseTag(ctx *collect.Context) (collect.ParseResult, error) {
+func ParseTag(ctx *spider.Context) (spider.ParseResult, error) {
 	re := regexp.MustCompile(regexpStr)
 
 	matches := re.FindAllSubmatch(ctx.Body, -1)
-	result := collect.ParseResult{}
+	result := spider.ParseResult{}
 
 	for _, m := range matches {
 		result.Requests = append(
-			result.Requests, &collect.Request{
+			result.Requests, &spider.Request{
 				Method:   "GET",
 				Task:     ctx.Req.Task,
 				URL:      "https://book.douban.com" + string(m[1]),
@@ -74,13 +69,13 @@ func ParseTag(ctx *collect.Context) (collect.ParseResult, error) {
 
 const BooklistRe = `<a.*?href="([^"]+)" title="([^"]+)"`
 
-func ParseBookList(ctx *collect.Context) (collect.ParseResult, error) {
+func ParseBookList(ctx *spider.Context) (spider.ParseResult, error) {
 	re := regexp.MustCompile(BooklistRe)
 	matches := re.FindAllSubmatch(ctx.Body, -1)
-	result := collect.ParseResult{}
+	result := spider.ParseResult{}
 
 	for _, m := range matches {
-		req := &collect.Request{
+		req := &spider.Request{
 			Priority: 100,
 			Method:   "GET",
 			Task:     ctx.Req.Task,
@@ -88,7 +83,7 @@ func ParseBookList(ctx *collect.Context) (collect.ParseResult, error) {
 			Depth:    ctx.Req.Depth + 1,
 			RuleName: "书籍简介",
 		}
-		req.TmpData = &collect.Temp{}
+		req.TmpData = &spider.Temp{}
 
 		if err := req.TmpData.Set("book_name", string(m[2])); err != nil {
 			zap.L().Error("Set TmpData failed", zap.Error(err))
@@ -110,7 +105,7 @@ var priceRe = regexp.MustCompile(`<span class="pl">定价:</span>([^<]+)<br/>`)
 var scoreRe = regexp.MustCompile(`<strong class="ll rating_num " property="v:average">([^<]+)</strong>`)
 var intoRe = regexp.MustCompile(`<div class="intro">[\d\D]*?<p>([^<]+)</p></div>`)
 
-func ParseBookDetail(ctx *collect.Context) (collect.ParseResult, error) {
+func ParseBookDetail(ctx *spider.Context) (spider.ParseResult, error) {
 	bookName := ctx.Req.TmpData.Get("book_name")
 	page, _ := strconv.Atoi(ExtraString(ctx.Body, pageRe))
 
@@ -125,7 +120,7 @@ func ParseBookDetail(ctx *collect.Context) (collect.ParseResult, error) {
 	}
 	data := ctx.Output(book)
 
-	result := collect.ParseResult{
+	result := spider.ParseResult{
 		Items: []interface{}{data},
 	}
 

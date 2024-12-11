@@ -9,6 +9,7 @@ import (
 
 	"github.com/astenir/crawler/extensions"
 	"github.com/astenir/crawler/proxy"
+	"github.com/astenir/crawler/spider"
 	"go.uber.org/zap"
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/encoding"
@@ -16,12 +17,7 @@ import (
 	"golang.org/x/text/transform"
 )
 
-type Fetcher interface {
-	Get(req *Request) ([]byte, error)
-}
-
-type BaseFetch struct {
-}
+type BaseFetch struct{}
 
 type BrowserFetch struct {
 	Timeout time.Duration
@@ -45,7 +41,7 @@ func DeterminEncoding(r *bufio.Reader) encoding.Encoding {
 	return e
 }
 
-func (BaseFetch) Get(req *Request) ([]byte, error) {
+func (BaseFetch) Get(req *spider.Request) ([]byte, error) {
 	resp, err := http.Get(req.URL)
 
 	if err != nil {
@@ -65,7 +61,7 @@ func (BaseFetch) Get(req *Request) ([]byte, error) {
 	return io.ReadAll(transReader)
 }
 
-func (b BrowserFetch) Get(request *Request) ([]byte, error) {
+func (b BrowserFetch) Get(request *spider.Request) ([]byte, error) {
 	client := &http.Client{
 		Timeout: b.Timeout,
 	}
